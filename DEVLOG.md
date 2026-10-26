@@ -323,8 +323,41 @@
 - [x] Espessura das paredes e muros reduzida para $1/10$ ($0.10$ unidades).
 - [x] Vão de porta com batentes laterais e abertura livre para visão do interior.
 - [x] Tecla `[F]` e `[Espaço]` alternam entre abrir girando e fechar girando.
-- [x] HUD indica dinamicamente `[F]: ABRIR PORTA` e `[F]: FECHAR PORTA`.
 - [x] Compilado com MSBuild Release x64: 0 Warnings, 0 Errors.
+
+---
+
+## [2026-10-26 20:10] - Entrada #07: Versão v002 - Folhas de Portas Sólidas 3D com Fechamentos Perpendiculares, Abertura Espelhada e Objeto Porta Isolado
+
+### 1. O que foi Implementado
+- **Folhas de Portas Sólidas e Estanques com Fechamentos Perpendiculares:**
+  - Correção do efeito visual de "duas folhas de portas paralelas sem preenchimento": adicionado fechamento perpendicular na ponta livre da folha ($C_1 \to C_2$) e na dobradiça ($C_0 \to C_3$).
+  - O perfil da folha agora é um paralelepípedo 3D estanque de 4 faces com espessura de $1/20$ ($0.05$ unidades), vedando completamente qualquer visão vazia interna ao olhar a porta de topo ou em ângulo rasante.
+  - Textura `DOOR_FRAME` com latão e rebaixo metálico aplicada nas tampas perpendiculares de espessura.
+- **Portões e Portas Duplas com Abertura Simétrica Espelhada:**
+  - Identificação de portas e portões duplos adjacentes (ex: grande portão do cais portuário em $Y=47, X=25$ e $26$).
+  - A folha da esquerda articula no batente oeste e abre para o oeste; a folha da direita articula no batente leste e abre espelhado para o leste.
+  - Ambas as folhas se recolhem harmoniosamente para os lados contrários, desobstruindo integralmente o vão duplo de passagem.
+- **Correção da Orientação da Textura em Ambas as Faces:**
+  - Proteção contra inversão de textura por direção de raio: as folhas de portas agora mantêm a coordenada física independente do ângulo de visão da câmera.
+  - Em ambas as faces da folha, a dobradiça permanece no eixo de rotação junto ao batente e a maçaneta permanece na ponta livre giratória.
+- **Isolamento do Objeto `Porta` na Pasta `src/objetos/`:**
+  - Criação da pasta `src/objetos/` e dos arquivos `Porta.hpp` e `Porta.cpp`.
+  - Encapsulamento completo de estado (`EstadoPorta`), animação suave a 60 FPS, propriedades físicas e cálculo analítico de raios ópticos (`intersectRay`).
+  - `CityMap` e `Raycaster` agora utilizam a classe `Porta` de forma modular e reutilizável.
+- **Geração do Executável Oficial Versionado `DayDoom_v002.exe`:**
+  - Metadados do Windows RC (`version.rc`) atualizados para `v002 (0.0.2.0)`.
+  - Título da janela atualizado para `DayDoom 2.5D [v002] - DayZ Retro Demake`.
+  - Script `run_pc.bat` atualizado para detectar e iniciar a nova versão `DayDoom_v002.exe`.
+
+### 2. Checklist de Validação e Testes
+- [x] Executável versionado `DayDoom_v002.exe` gerado via post-build do CMake.
+- [x] Folha da porta possui fechamento perpendicular de $0.05$ na ponta e na dobradiça sem vazios.
+- [x] Portão duplo do cais abre espelhado para lados opostos liberando o centro.
+- [x] Textura da porta com maçaneta na ponta e dobradiça no eixo em ambas as faces.
+- [x] Objeto `Porta` isolado em `src/objetos/Porta.hpp` e `src/objetos/Porta.cpp`.
+- [x] Compilado com MSBuild Release x64: 0 Warnings, 0 Errors.
+
 
 
 

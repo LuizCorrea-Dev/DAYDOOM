@@ -3,7 +3,11 @@ setlocal
 cd /d "%~dp0"
 
 set "EXE=build\Release\DayDoom.exe"
-if exist "build\Release\DayDoom_v001.exe" set "EXE=build\Release\DayDoom_v001.exe"
+if exist "build\Release\DayDoom_v002.exe" (
+    set "EXE=build\Release\DayDoom_v002.exe"
+) else if exist "build\Release\DayDoom_v001.exe" (
+    set "EXE=build\Release\DayDoom_v001.exe"
+)
 
 if not "%~1"=="" (
     start "" "%EXE%" %*
@@ -11,7 +15,7 @@ if not "%~1"=="" (
 )
 
 echo ========================================================
-echo   DAYDOOM 2.5D [v001] - Selecione a Resolucao de Execucao
+echo   DAYDOOM 2.5D [v002] - Selecione a Resolucao de Execucao
 echo ========================================================
 echo  [1] Widescreen 16:9 (480x270) - Padrao PC e Mobile Landscape
 echo  [2] Doom Classico 13h (320x200) - Retro MS-DOS 1993

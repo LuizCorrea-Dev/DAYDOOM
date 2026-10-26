@@ -4,29 +4,9 @@
 #include <cstdint>
 #include "../engine/MathDef.hpp"
 #include "ChernogorskDef.hpp"
+#include "../objetos/Porta.hpp"
 
 namespace DayDoom::Game {
-
-enum class DoorState {
-    CLOSED = 0,
-    OPENING = 1,
-    OPEN = 2,
-    CLOSING = 3
-};
-
-struct Door {
-    int x = 0;
-    int y = 0;
-    int type = TYPE_DOOR_WOOD;
-    DoorState state = DoorState::CLOSED;
-    float openProgress = 0.0f; // 0.0f = fechada (0 graus), 1.0f = totalmente aberta (90 graus)
-    float currentAngle = 0.0f; // Angulo de rotacao da dobradica em radianos [0, PI/2]
-    bool isVertical = false;   // false = vao horizontal (rotaciona para dentro), true = vao vertical
-    float hingeX = 0.0f;
-    float hingeY = 0.0f;
-    float swingDir = 1.0f;     // +1.0f ou -1.0f para girar para o interior do compartimento
-    static constexpr float THICKNESS = 0.05f; // Espessura da porta = 1/20 da largura do bloco
-};
 
 // Espessura das paredes e muros finos = 1/10 da largura do bloco
 constexpr float WALL_THICKNESS = 0.10f;
@@ -69,6 +49,8 @@ public:
     float getSpawnAngle() const { return -1.5707963f; } // Olhando para o Norte (-90 graus)
 
     const std::vector<Door>& getDoors() const { return m_doors; }
+    Door* findDoor(int x, int y);
+    const Door* findDoor(int x, int y) const;
 
 private:
     int m_grid[MAP_WIDTH * MAP_HEIGHT] = {0};
@@ -76,8 +58,6 @@ private:
     std::vector<Door> m_doors;
 
     void registerDoor(int x, int y, int type);
-    Door* findDoor(int x, int y);
-    const Door* findDoor(int x, int y) const;
 
     void buildChernogorskLayout();
 

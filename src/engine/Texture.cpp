@@ -149,15 +149,15 @@ void TextureManager::initProceduralTextures() {
             int plankX = x % 16;
             bool isPlankSeam = (plankX == 0 || plankX == 15);
 
-            // Ferragens: 2 dobradiças de ferro forjado preto com pontas triangulares
-            bool isHingeTop = (y >= 10 && y <= 16 && x <= 50);
-            bool isHingeBot = (y >= 46 && y <= 52 && x <= 50);
-            bool isRivet = ((isHingeTop || isHingeBot) && (x == 8 || x == 24 || x == 40));
+            // Ferragens: 2 dobradicas de ferro forjado preto com pontas triangulares na lateral da dobradica (x <= 26)
+            bool isHingeTop = (y >= 10 && y <= 16 && x <= 26);
+            bool isHingeBot = (y >= 46 && y <= 52 && x <= 26);
+            bool isRivet = ((isHingeTop || isHingeBot) && (x == 5 || x == 12 || x == 20));
 
-            // Espelho e maçaneta de bronze dourado à esquerda
-            bool isPlate = (x >= 8 && x <= 14 && y >= 26 && y <= 38);
-            bool isHandle = (x >= 6 && x <= 16 && y >= 29 && y <= 32);
-            bool isKeyhole = (x >= 10 && x <= 12 && y >= 34 && y <= 36);
+            // Espelho e macaneta de bronze dourado na lateral da ponta da porta (x >= 46)
+            bool isPlate = (x >= 49 && x <= 55 && y >= 26 && y <= 38);
+            bool isHandle = (x >= 46 && x <= 58 && y >= 29 && y <= 32);
+            bool isKeyhole = (x >= 51 && x <= 53 && y >= 34 && y <= 36);
 
             if (isKeyhole) {
                 m_textures[WOOD_DOOR][y * TEX_SIZE + x] = makeColor(15, 10, 5);
@@ -355,7 +355,7 @@ void TextureManager::initProceduralTextures() {
             bool isFrame = (x < 4 || x > 59 || y < 4 || y > 59);
             bool isVerticalBar = (x % 6 <= 1);
             bool isHorizontalRail = (y == 8 || y == 9 || y == 32 || y == 33 || y == 54 || y == 55);
-            bool isPadlock = (x >= 28 && x <= 36 && y >= 29 && y <= 37);
+            bool isPadlock = (x >= 48 && x <= 56 && y >= 28 && y <= 36);
 
             if (isPadlock) {
                 m_textures[GATE_IRON][y * TEX_SIZE + x] = makeColor(210, 175, 45); // Cadeado dourado

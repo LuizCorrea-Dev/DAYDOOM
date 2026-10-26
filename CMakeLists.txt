@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(DayDoom VERSION 0.0.1 LANGUAGES CXX C RC)
+project(DayDoom VERSION 0.0.2 LANGUAGES CXX C RC)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,8 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_compile_definitions(
     SCREEN_WIDTH=480
     SCREEN_HEIGHT=270
-    WINDOW_TITLE="DayDoom 2.5D [v001] - DayZ Retro Demake"
-    DAYDOOM_VERSION="v001"
+    WINDOW_TITLE="DayDoom 2.5D [v002] - DayZ Retro Demake"
+    DAYDOOM_VERSION="v002"
 )
 
 # Inclusão de diretórios de código
@@ -19,6 +19,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hal
     ${CMAKE_CURRENT_SOURCE_DIR}/src/engine
     ${CMAKE_CURRENT_SOURCE_DIR}/src/game
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/objetos
 )
 
 # Detecção ou download automático da SDL2
@@ -69,8 +70,8 @@ target_link_libraries(DayDoom PRIVATE ${SDL2_LIBRARIES})
 add_custom_command(TARGET DayDoom POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "$<TARGET_FILE:DayDoom>"
-    "$<TARGET_FILE_DIR:DayDoom>/DayDoom_v001.exe"
-    COMMENT "Gerando executavel versionado DayDoom_v001.exe"
+    "$<TARGET_FILE_DIR:DayDoom>/DayDoom_v002.exe"
+    COMMENT "Gerando executavel versionado DayDoom_v002.exe"
 )
 
 # Copiar assets para a pasta de saída do executável
