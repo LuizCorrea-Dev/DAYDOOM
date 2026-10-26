@@ -292,5 +292,39 @@
 - [x] 24 texturas com alto contraste, relevo 3D, bisel e estilo autêntico do Doom 1993.
 - [x] Compilado com MSBuild Release x64: 0 Warnings, 0 Errors.
 
+---
+
+## [2026-10-26 18:15] - Entrada #06: Portas Giratórias com Dobradiças em 3D (Espessura 1/20) e Paredes/Muros com Espessura Real 1/10
+
+### 1. O que foi Implementado
+- **Portas com Abertura Giratória por Rotação na Dobradiça (Swinging / Hinged Doors):**
+  - Eliminação completa do deslizamento para dentro do muro ("não sendo puxadas pelo muro").
+  - A porta agora gira organicamente em torno de seu eixo/dobradiça (`hingeX, hingeY`) de $0^\circ$ (fechada) até $90^\circ$ ($\frac{\pi}{2}$ radianos) aberta.
+  - Implementação da rotação vetorial $\vec{u} = (\cos\theta, \pm\sin\theta)$ e normal $\vec{n} = (\mp\sin\theta, \cos\theta)$ em espaço de coordenadas contínuas.
+  - Folha da porta modelada com **espessura exata de 1/20 da largura do bloco ($0.05$ unidades)**, contendo face frontal, face traseira e borda de topo/ponta de espessura $0.05$.
+  - Interseção raio-segmento em 2D fechada e analítica, calculando o parâmetro de profundidade perpendicular sem deformações de perspectiva ou fisheye.
+- **Paredes de Edifícios e Muros com Espessura Real de 1/10 da Largura do Bloco ($0.10$ unidades):**
+  - Muros divisórios (PO-2 soviético `MURO_SOVIET`, muro de pedra `MURO_STONE`, cerca `FENCE_WIRE`) e paredes de construções deixam de ser blocos maciços cúbicos de $1.0 \times 1.0$.
+  - Cada muro/parede é renderizado com espessura de $1/10$ ($0.10$ unidades), centrado na célula (placas de $0.45$ a $0.55$).
+  - O DDA testa as faces da placa fina com detecção de orientação horizontal/vertical e quinas.
+  - A visão do jogador e os raios de luz conseguem enxergar além das extremidades dos muros finos, conferindo esbelteza e proporção arquitetônica realista.
+- **Vão de Passagem Livre e Batentes:**
+  - O vão da porta possui batentes fixos nas duas extremidades laterais revestidos com textura `DOOR_FRAME`.
+  - Ao abrir a porta, o vão central fica totalmente desobstruído: o jogador vê através da abertura para o interior das salas, enquanto a folha de espessura $0.05$ gira contra a parede lateral.
+- **Abertura Inteligente para o Interior:**
+  - A função `registerDoor` inspeciona os compartimentos adjacentes e define `swingDir` para que as portas girem sempre para o lado interno das edificações.
+- **Passagem Física do Jogador:**
+  - O sistema de colisão (`isWalkable`) libera a travessia assim que a rotação da porta ultrapassa $35^\circ$ ($openProgress > 0.40$).
+
+### 2. Checklist de Validação e Testes
+- [x] Portas abrem girando em torno da dobradiça de $0^\circ$ a $90^\circ$ (não deslizam).
+- [x] Espessura da porta configurada para $1/20$ ($0.05$ unidades).
+- [x] Folha da porta possui faces frontal, traseira e borda de espessura visíveis em 3D.
+- [x] Espessura das paredes e muros reduzida para $1/10$ ($0.10$ unidades).
+- [x] Vão de porta com batentes laterais e abertura livre para visão do interior.
+- [x] Tecla `[F]` e `[Espaço]` alternam entre abrir girando e fechar girando.
+- [x] HUD indica dinamicamente `[F]: ABRIR PORTA` e `[F]: FECHAR PORTA`.
+- [x] Compilado com MSBuild Release x64: 0 Warnings, 0 Errors.
+
 
 

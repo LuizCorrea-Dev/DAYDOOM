@@ -19,9 +19,17 @@ struct Door {
     int y = 0;
     int type = TYPE_DOOR_WOOD;
     DoorState state = DoorState::CLOSED;
-    float openProgress = 0.0f; // 0.0f = fechada, 1.0f = totalmente aberta
-    bool isVertical = false;   // true = folha no eixo Y (posicionada em X + 0.5), false = folha no eixo X (posicionada em Y + 0.5)
+    float openProgress = 0.0f; // 0.0f = fechada (0 graus), 1.0f = totalmente aberta (90 graus)
+    float currentAngle = 0.0f; // Angulo de rotacao da dobradica em radianos [0, PI/2]
+    bool isVertical = false;   // false = vao horizontal (rotaciona para dentro), true = vao vertical
+    float hingeX = 0.0f;
+    float hingeY = 0.0f;
+    float swingDir = 1.0f;     // +1.0f ou -1.0f para girar para o interior do compartimento
+    static constexpr float THICKNESS = 0.05f; // Espessura da porta = 1/20 da largura do bloco
 };
+
+// Espessura das paredes e muros finos = 1/10 da largura do bloco
+constexpr float WALL_THICKNESS = 0.10f;
 
 class CityMap {
 public:

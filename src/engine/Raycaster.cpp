@@ -132,8 +132,9 @@ void Raycaster::renderWalls(
             sideDistY = (static_cast<float>(mapY) + 1.0f - camera.pos.y) * deltaDistY;
         }
 
-        // Executa o algoritmo DDA com suporte a portas finas centralizadas e batentes
-        while (hit == 0) {
+        // Executa o algoritmo DDA com suporte a paredes/muros finos (1/10) e vãos de porta
+        int loopCount = 0;
+        while (hit == 0 && loopCount++ < 120) {
             if (sideDistX < sideDistY) {
                 sideDistX += deltaDistX;
                 mapX += stepX;
@@ -144,67 +145,64 @@ void Raycaster::renderWalls(
                 side = 1;
             }
 
+            if (mapX < 0 || mapX >= Game::CityMap::MAP_WIDTH || mapY < 0 || mapY >= Game::CityMap::MAP_HEIGHT) {
+                break;
+            }
+
             int cell = map.getCell(mapX, mapY);
             if (cell == 0) continue;
 
             if (Game::isDoorType(cell)) {
+                // Vão de porta: abertura na parede com batentes/marcos laterais fixos
                 bool isVert = map.isDoorVertical(mapX, mapY);
-                float openProg = map.getDoorProgress(mapX, mapY);
-
-                if (!isVert) {
-                    // Porta horizontal: a folha fina está no centro do bloco (plano Y = mapY + 0.5)
-                    float halfDistY = (static_cast<float>(mapY) + 0.5f - camera.pos.y) / rayDirY;
-                    float hitCoordX = camera.pos.x + halfDistY * rayDirX;
-                    float offset = hitCoordX - static_cast<float>(mapX);
-
-                    if (halfDistY > 0.0f && offset >= 0.0f && offset <= 1.0f) {
-                        // Se o raio atingir a parte aberta que já deslizou, passa direto pelo vão!
-                        if (offset < openProg) {
-                            continue;
+                if (isVert) {
+                    float distX = (static_cast<float>(mapX) + 0.5f - camera.pos.x) / rayDirX;
+                    float hitCoordY = camera.pos.y + distX * rayDirY;
+                    float offset = hitCoordY - static_cast<float>(mapY);
+                    if (distX > 0.05f) {
+                        if (offset >= 0.0f && offset <= 0.06f) {
+                            hit = cell;
+                            perpWallDist = distX;
+                            wallX = offset / 0.06f;
+                            side = 0;
+                            hitTexID = TextureManager::DOOR_FRAME;
+                            break;
+                        } else if (offset >= 0.94f && offset <= 1.0f) {
+                            hit = cell;
+                            perpWallDist = distX;
+                            wallX = (offset - 0.94f) / 0.06f;
+                            side = 0;
+                            hitTexID = TextureManager::DOOR_FRAME;
+                            break;
                         }
-                        // Colidiu com a folha fina da porta
-                        hit = cell;
-                        perpWallDist = halfDistY;
-                        wallX = offset - openProg;
-                        side = 1;
-                        hitTexID = map.getDoorType(mapX, mapY);
-                        break;
-                    } else if (side == 0) {
-                        // Raio colidiu com o batente lateral (marco da porta)
-                        hit = cell;
-                        perpWallDist = sideDistX - deltaDistX;
-                        wallX = camera.pos.y + perpWallDist * rayDirY;
-                        wallX -= std::floor(wallX);
-                        hitTexID = TextureManager::DOOR_FRAME;
-                        break;
+                        // Raio atravessa o vão central da porta livremente
+                        continue;
                     }
                 } else {
-                    // Porta vertical: a folha fina está no centro do bloco (plano X = mapX + 0.5)
-                    float halfDistX = (static_cast<float>(mapX) + 0.5f - camera.pos.x) / rayDirX;
-                    float hitCoordY = camera.pos.y + halfDistX * rayDirY;
-                    float offset = hitCoordY - static_cast<float>(mapY);
-
-                    if (halfDistX > 0.0f && offset >= 0.0f && offset <= 1.0f) {
-                        if (offset < openProg) {
-                            continue;
+                    float distY = (static_cast<float>(mapY) + 0.5f - camera.pos.y) / rayDirY;
+                    float hitCoordX = camera.pos.x + distY * rayDirX;
+                    float offset = hitCoordX - static_cast<float>(mapX);
+                    if (distY > 0.05f) {
+                        if (offset >= 0.0f && offset <= 0.06f) {
+                            hit = cell;
+                            perpWallDist = distY;
+                            wallX = offset / 0.06f;
+                            side = 1;
+                            hitTexID = TextureManager::DOOR_FRAME;
+                            break;
+                        } else if (offset >= 0.94f && offset <= 1.0f) {
+                            hit = cell;
+                            perpWallDist = distY;
+                            wallX = (offset - 0.94f) / 0.06f;
+                            side = 1;
+                            hitTexID = TextureManager::DOOR_FRAME;
+                            break;
                         }
-                        hit = cell;
-                        perpWallDist = halfDistX;
-                        wallX = offset - openProg;
-                        side = 0;
-                        hitTexID = map.getDoorType(mapX, mapY);
-                        break;
-                    } else if (side == 1) {
-                        hit = cell;
-                        perpWallDist = sideDistY - deltaDistY;
-                        wallX = camera.pos.x + perpWallDist * rayDirX;
-                        wallX -= std::floor(wallX);
-                        hitTexID = TextureManager::DOOR_FRAME;
-                        break;
+                        continue;
                     }
                 }
-            } else {
-                // Parede sólida normal
+            } else if (cell == Game::TYPE_CONTAINER_RED || cell == Game::TYPE_CONTAINER_BLU || cell == Game::TYPE_WATER_BARRIER) {
+                // Blocos sólidos integrais (Contêineres de carga e barreira de água)
                 hit = cell;
                 perpWallDist = (side == 0) ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
                 if (side == 0) {
@@ -215,7 +213,178 @@ void Raycaster::renderWalls(
                 wallX -= std::floor(wallX);
                 hitTexID = hit;
                 break;
+            } else {
+                // Paredes de edifícios e muros finos com espessura exata de 1/10 (0.10f)
+                bool wallN = (mapY > 0 && map.getCell(mapX, mapY - 1) != 0);
+                bool wallS = (mapY < Game::CityMap::MAP_HEIGHT - 1 && map.getCell(mapX, mapY + 1) != 0);
+                bool wallW = (mapX > 0 && map.getCell(mapX - 1, mapY) != 0);
+                bool wallE = (mapX < Game::CityMap::MAP_WIDTH - 1 && map.getCell(mapX + 1, mapY) != 0);
+
+                bool isHoriz = (wallW || wallE) && !(wallN && wallS);
+                bool isVert  = (wallN || wallS);
+
+                if (isHoriz) {
+                    // Muro/parede horizontal: face frontal em Y = mapY + 0.5 - 0.05 * stepY
+                    float targetY = static_cast<float>(mapY) + 0.5f - 0.05f * static_cast<float>(stepY);
+                    float distY = (targetY - camera.pos.y) / rayDirY;
+                    float hitCoordX = camera.pos.x + distY * rayDirX;
+                    float offset = hitCoordX - static_cast<float>(mapX);
+
+                    if (distY > 0.05f && offset >= 0.0f && offset <= 1.0f) {
+                        hit = cell;
+                        perpWallDist = distY;
+                        wallX = offset;
+                        side = 1;
+                        hitTexID = cell;
+                        break;
+                    }
+                } else if (isVert) {
+                    // Muro/parede vertical: face frontal em X = mapX + 0.5 - 0.05 * stepX
+                    float targetX = static_cast<float>(mapX) + 0.5f - 0.05f * static_cast<float>(stepX);
+                    float distX = (targetX - camera.pos.x) / rayDirX;
+                    float hitCoordY = camera.pos.y + distX * rayDirY;
+                    float offset = hitCoordY - static_cast<float>(mapY);
+
+                    if (distX > 0.05f && offset >= 0.0f && offset <= 1.0f) {
+                        hit = cell;
+                        perpWallDist = distX;
+                        wallX = offset;
+                        side = 0;
+                        hitTexID = cell;
+                        break;
+                    }
+                } else {
+                    // Quina ou pilar: testa ambas as faces
+                    float targetX = static_cast<float>(mapX) + 0.5f - 0.05f * static_cast<float>(stepX);
+                    float distX = (targetX - camera.pos.x) / rayDirX;
+                    float hitY = camera.pos.y + distX * rayDirY;
+
+                    float targetY = static_cast<float>(mapY) + 0.5f - 0.05f * static_cast<float>(stepY);
+                    float distY = (targetY - camera.pos.y) / rayDirY;
+                    float hitX = camera.pos.x + distY * rayDirX;
+
+                    if (distX > 0.05f && (distX < distY || distY <= 0.05f) && hitY >= static_cast<float>(mapY) && hitY <= static_cast<float>(mapY) + 1.0f) {
+                        hit = cell;
+                        perpWallDist = distX;
+                        wallX = hitY - static_cast<float>(mapY);
+                        side = 0;
+                        hitTexID = cell;
+                        break;
+                    } else if (distY > 0.05f && hitX >= static_cast<float>(mapX) && hitX <= static_cast<float>(mapX) + 1.0f) {
+                        hit = cell;
+                        perpWallDist = distY;
+                        wallX = hitX - static_cast<float>(mapX);
+                        side = 1;
+                        hitTexID = cell;
+                        break;
+                    }
+                }
             }
+        }
+
+        if (hit == 0) {
+            perpWallDist = 50.0f;
+        }
+
+        // Teste de colisão da folha da porta girando na dobradiça (espessura 1/20 = 0.05f)
+        for (const auto& d : map.getDoors()) {
+            float dx = (static_cast<float>(d.x) + 0.5f) - camera.pos.x;
+            float dy = (static_cast<float>(d.y) + 0.5f) - camera.pos.y;
+            float distCam = dx * camera.dir.x + dy * camera.dir.y;
+            if (distCam < -0.5f || (distCam - 1.5f) > perpWallDist) continue;
+
+            float hx = d.hingeX;
+            float hy = d.hingeY;
+            float theta = d.currentAngle;
+            float L = 0.94f;
+            float T = Game::Door::THICKNESS; // 0.05f = 1/20
+            float h = T * 0.5f;             // 0.025f
+
+            float ux = 0.0f, uy = 0.0f;
+            float nx = 0.0f, ny = 0.0f;
+
+            if (d.isVertical) {
+                ux = d.swingDir * std::sin(theta);
+                uy = std::cos(theta);
+                nx = uy;
+                ny = -ux;
+            } else {
+                ux = std::cos(theta);
+                uy = d.swingDir * std::sin(theta);
+                nx = -uy;
+                ny = ux;
+            }
+
+            // 4 vértices do contorno da folha da porta
+            float v0x = hx + h * nx, v0y = hy + h * ny;
+            float v1x = hx + L * ux + h * nx, v1y = hy + L * uy + h * ny;
+            float v2x = hx + L * ux - h * nx, v2y = hy + L * uy - h * ny;
+            float v3x = hx - h * nx, v3y = hy - h * ny;
+
+            // Face Frontal: V0 -> V1
+            {
+                float vx = v1x - v0x;
+                float vy = v1y - v0y;
+                float det = rayDirY * vx - rayDirX * vy;
+                if (std::abs(det) > 1e-6f) {
+                    float delX = v0x - camera.pos.x;
+                    float delY = v0y - camera.pos.y;
+                    float t = (delY * vx - delX * vy) / det;
+                    float s = (rayDirX * delY - rayDirY * delX) / det;
+                    if (t > 0.05f && t < perpWallDist && s >= 0.0f && s <= 1.0f) {
+                        perpWallDist = t;
+                        hit = d.type;
+                        hitTexID = d.type;
+                        wallX = s;
+                        side = (std::abs(vy) > std::abs(vx)) ? 0 : 1;
+                    }
+                }
+            }
+
+            // Face Traseira: V3 -> V2
+            {
+                float vx = v2x - v3x;
+                float vy = v2y - v3y;
+                float det = rayDirY * vx - rayDirX * vy;
+                if (std::abs(det) > 1e-6f) {
+                    float delX = v3x - camera.pos.x;
+                    float delY = v3y - camera.pos.y;
+                    float t = (delY * vx - delX * vy) / det;
+                    float s = (rayDirX * delY - rayDirY * delX) / det;
+                    if (t > 0.05f && t < perpWallDist && s >= 0.0f && s <= 1.0f) {
+                        perpWallDist = t;
+                        hit = d.type;
+                        hitTexID = d.type;
+                        wallX = 1.0f - s;
+                        side = (std::abs(vy) > std::abs(vx)) ? 0 : 1;
+                    }
+                }
+            }
+
+            // Face da Borda/Ponta (Espessura 1/20): V1 -> V2
+            {
+                float vx = v2x - v1x;
+                float vy = v2y - v1y;
+                float det = rayDirY * vx - rayDirX * vy;
+                if (std::abs(det) > 1e-6f) {
+                    float delX = v1x - camera.pos.x;
+                    float delY = v1y - camera.pos.y;
+                    float t = (delY * vx - delX * vy) / det;
+                    float s = (rayDirX * delY - rayDirY * delX) / det;
+                    if (t > 0.05f && t < perpWallDist && s >= 0.0f && s <= 1.0f) {
+                        perpWallDist = t;
+                        hit = d.type;
+                        hitTexID = TextureManager::DOOR_FRAME;
+                        wallX = s;
+                        side = (std::abs(vy) > std::abs(vx)) ? 0 : 1;
+                    }
+                }
+            }
+        }
+
+        if (hit == 0) {
+            m_zBuffer[x] = 1000.0f;
+            continue;
         }
 
         if (perpWallDist < 0.01f) perpWallDist = 0.01f;

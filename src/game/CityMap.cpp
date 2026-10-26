@@ -289,6 +289,22 @@ void CityMap::registerDoor(int x, int y, int type) {
     bool hasWallSouth = (y < MAP_HEIGHT - 1 && m_grid[(y + 1) * MAP_WIDTH + x] > 0 && !isDoorType(m_grid[(y + 1) * MAP_WIDTH + x]));
     d.isVertical = (hasWallNorth && hasWallSouth);
 
+    if (d.isVertical) {
+        // Dobradiça no marco norte do vão (X + 0.5, Y + 0.05)
+        d.hingeX = static_cast<float>(x) + 0.50f;
+        d.hingeY = static_cast<float>(y) + 0.05f;
+        // Gira para o interior (+X se leste for interior/chão de madeira/concreto, senão -X)
+        bool eastIsInside = (x < MAP_WIDTH - 1 && (m_floorGrid[y * MAP_WIDTH + (x + 1)] == FLOOR_WOOD || m_floorGrid[y * MAP_WIDTH + (x + 1)] == FLOOR_CONCRETE));
+        d.swingDir = eastIsInside ? 1.0f : -1.0f;
+    } else {
+        // Dobradiça no marco oeste do vão (X + 0.05, Y + 0.5)
+        d.hingeX = static_cast<float>(x) + 0.05f;
+        d.hingeY = static_cast<float>(y) + 0.50f;
+        // Gira para o interior (+Y se sul for interior/chão de madeira/concreto, senão -Y)
+        bool southIsInside = (y < MAP_HEIGHT - 1 && (m_floorGrid[(y + 1) * MAP_WIDTH + x] == FLOOR_WOOD || m_floorGrid[(y + 1) * MAP_WIDTH + x] == FLOOR_CONCRETE));
+        d.swingDir = southIsInside ? 1.0f : -1.0f;
+    }
+
     m_doors.push_back(d);
 }
 
@@ -309,18 +325,20 @@ const Door* CityMap::findDoor(int x, int y) const {
 void CityMap::update(float deltaTime) {
     for (auto& d : m_doors) {
         if (d.state == DoorState::OPENING) {
-            d.openProgress += 1.8f * deltaTime; // Abre suavemente em ~0.55s
+            d.openProgress += 1.6f * deltaTime; // Gira de 0° a 90° em ~0.6s
             if (d.openProgress >= 1.0f) {
                 d.openProgress = 1.0f;
                 d.state = DoorState::OPEN;
             }
         } else if (d.state == DoorState::CLOSING) {
-            d.openProgress -= 1.8f * deltaTime; // Fecha suavemente
+            d.openProgress -= 1.6f * deltaTime; // Gira de volta de 90° a 0°
             if (d.openProgress <= 0.0f) {
                 d.openProgress = 0.0f;
                 d.state = DoorState::CLOSED;
             }
         }
+        // Atualiza o ângulo da dobradiça em radianos [0.0f, PI/2] (0° fechada a 90° aberta)
+        d.currentAngle = d.openProgress * 1.57079632679f;
     }
 }
 
@@ -351,8 +369,8 @@ bool CityMap::isWalkable(float x, float y, float radius) const {
 
             if (isDoorType(cell)) {
                 const Door* d = findDoor(cx, cy);
-                // Se a porta estiver pelo menos 70% aberta, o jogador consegue passar
-                if (d && d->openProgress > 0.70f) {
+                // Quando a porta gira mais de 35° (progresso > 0.40), o vão já fica livre para passagem
+                if (d && d->openProgress > 0.40f) {
                     continue;
                 }
                 return false;
