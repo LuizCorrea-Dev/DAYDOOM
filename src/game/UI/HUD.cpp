@@ -8,14 +8,19 @@ HUD::HUD(int screenWidth, int screenHeight)
     : m_screenWidth(screenWidth), m_screenHeight(screenHeight) {
 }
 
-void HUD::render(uint32_t* screenBuffer, const Player& player, float fps, const char* locationName, bool nearDoor) {
+void HUD::render(uint32_t* screenBuffer, const Player& player, float fps, const char* locationName, bool nearDoor, bool isDoorOpen) {
     // 1. Mira Retrô no Centro da Tela
     drawCrosshair(screenBuffer);
 
     // Prompt dinâmico de interação ao se aproximar de qualquer porta/portão
     if (nearDoor) {
-        drawRect(screenBuffer, m_screenWidth / 2 - 36, m_screenHeight / 2 + 8, 72, 10, Engine::makeColor(15, 18, 24, 220));
-        drawText(screenBuffer, m_screenWidth / 2 - 33, m_screenHeight / 2 + 10, "[F]: ABRIR PORTA", Engine::makeColor(255, 220, 40));
+        if (isDoorOpen) {
+            drawRect(screenBuffer, m_screenWidth / 2 - 40, m_screenHeight / 2 + 8, 80, 10, Engine::makeColor(15, 18, 24, 220));
+            drawText(screenBuffer, m_screenWidth / 2 - 37, m_screenHeight / 2 + 10, "[F]: FECHAR PORTA", Engine::makeColor(100, 225, 255));
+        } else {
+            drawRect(screenBuffer, m_screenWidth / 2 - 36, m_screenHeight / 2 + 8, 72, 10, Engine::makeColor(15, 18, 24, 220));
+            drawText(screenBuffer, m_screenWidth / 2 - 33, m_screenHeight / 2 + 10, "[F]: ABRIR PORTA", Engine::makeColor(255, 220, 40));
+        }
     }
 
     // 2. Painel Inferior de Sobrevivência (Estilo HUD do DayZ)

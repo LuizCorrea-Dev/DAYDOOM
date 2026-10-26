@@ -103,6 +103,9 @@ int main(int argc, char* argv[]) {
             std::cout << "[MAP] Planta Baixa de Chernogorsk " << (showAutomap ? "ABERTA" : "FECHADA") << std::endl;
         }
 
+        // Atualização da lógica de portas em tempo real (animação de deslizamento suave)
+        cityMap.update(deltaTime);
+
         // Atualização da lógica do jogador, física e mecânicas de sobrevivência do DayZ
         // O jogador continua atualizando mesmo no mapa ou pode navegar
         player.update(deltaTime, input, cityMap);
@@ -117,13 +120,14 @@ int main(int argc, char* argv[]) {
             raycaster.render(screenBuffer, player.getCamera(), cityMap, textures);
 
             // Verifica se o jogador está olhando diretamente para uma porta próxima
-            int targetCellX = static_cast<int>(player.getCamera().pos.x + player.getCamera().dir.x * 1.3f);
-            int targetCellY = static_cast<int>(player.getCamera().pos.y + player.getCamera().dir.y * 1.3f);
+            int targetCellX = static_cast<int>(player.getCamera().pos.x + player.getCamera().dir.x * 1.4f);
+            int targetCellY = static_cast<int>(player.getCamera().pos.y + player.getCamera().dir.y * 1.4f);
             bool nearDoor = cityMap.isDoor(targetCellX, targetCellY);
+            bool isDoorOpen = nearDoor && cityMap.isDoorOpen(targetCellX, targetCellY);
 
             // Renderização do HUD de Sobrevivência (Vida, Fome, Stamina, Sangramento, Setor e Mira)
             const char* sectorName = cityMap.getSectorName(player.getCamera().pos.x, player.getCamera().pos.y);
-            hud.render(screenBuffer, player, platform.getFPS(), sectorName, nearDoor);
+            hud.render(screenBuffer, player, platform.getFPS(), sectorName, nearDoor, isDoorOpen);
         }
 
         // Apresenta o buffer na tela via escalonador nítido da SDL2

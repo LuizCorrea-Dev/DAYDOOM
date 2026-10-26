@@ -10,8 +10,8 @@ class HUD {
 public:
     HUD(int screenWidth, int screenHeight);
 
-    // Desenha as barras de sobrevivência do DayZ, mira, setor ativo e prompt de portas
-    void render(uint32_t* screenBuffer, const Player& player, float fps, const char* locationName = nullptr, bool nearDoor = false);
+    // Desenha as barras de sobrevivência do DayZ, mira, setor ativo e prompt de portas (abrir/fechar)
+    void render(uint32_t* screenBuffer, const Player& player, float fps, const char* locationName = nullptr, bool nearDoor = false, bool isDoorOpen = false);
 
 private:
     int m_screenWidth;

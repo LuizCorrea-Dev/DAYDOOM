@@ -256,6 +256,72 @@ void CityMap::buildChernogorskLayout() {
             m_grid[y * MAP_WIDTH + 56] = TYPE_FENCE_WIRE;
         }
     }
+
+    // Registra todas as portas e detecta sua orientação espacial (vertical ou horizontal)
+    for (int y = 0; y < MAP_HEIGHT; ++y) {
+        for (int x = 0; x < MAP_WIDTH; ++x) {
+            int cell = m_grid[y * MAP_WIDTH + x];
+            if (isDoorType(cell)) {
+                registerDoor(x, y, cell);
+            }
+        }
+    }
+}
+
+void CityMap::registerDoor(int x, int y, int type) {
+    if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return;
+    for (auto& d : m_doors) {
+        if (d.x == x && d.y == y) {
+            d.type = type;
+            return;
+        }
+    }
+
+    Door d;
+    d.x = x;
+    d.y = y;
+    d.type = type;
+    d.state = DoorState::CLOSED;
+    d.openProgress = 0.0f;
+
+    // Determina se a folha da porta corre no eixo Y (folha em X + 0.5) ou no eixo X (folha em Y + 0.5)
+    bool hasWallNorth = (y > 0 && m_grid[(y - 1) * MAP_WIDTH + x] > 0 && !isDoorType(m_grid[(y - 1) * MAP_WIDTH + x]));
+    bool hasWallSouth = (y < MAP_HEIGHT - 1 && m_grid[(y + 1) * MAP_WIDTH + x] > 0 && !isDoorType(m_grid[(y + 1) * MAP_WIDTH + x]));
+    d.isVertical = (hasWallNorth && hasWallSouth);
+
+    m_doors.push_back(d);
+}
+
+Door* CityMap::findDoor(int x, int y) {
+    for (auto& d : m_doors) {
+        if (d.x == x && d.y == y) return &d;
+    }
+    return nullptr;
+}
+
+const Door* CityMap::findDoor(int x, int y) const {
+    for (const auto& d : m_doors) {
+        if (d.x == x && d.y == y) return &d;
+    }
+    return nullptr;
+}
+
+void CityMap::update(float deltaTime) {
+    for (auto& d : m_doors) {
+        if (d.state == DoorState::OPENING) {
+            d.openProgress += 1.8f * deltaTime; // Abre suavemente em ~0.55s
+            if (d.openProgress >= 1.0f) {
+                d.openProgress = 1.0f;
+                d.state = DoorState::OPEN;
+            }
+        } else if (d.state == DoorState::CLOSING) {
+            d.openProgress -= 1.8f * deltaTime; // Fecha suavemente
+            if (d.openProgress <= 0.0f) {
+                d.openProgress = 0.0f;
+                d.state = DoorState::CLOSED;
+            }
+        }
+    }
 }
 
 int CityMap::getCell(int x, int y) const {
@@ -281,9 +347,18 @@ bool CityMap::isWalkable(float x, float y, float radius) const {
     for (int cy = minY; cy <= maxY; ++cy) {
         for (int cx = minX; cx <= maxX; ++cx) {
             int cell = getCell(cx, cy);
-            if (cell != TYPE_EMPTY) {
+            if (cell == TYPE_EMPTY) continue;
+
+            if (isDoorType(cell)) {
+                const Door* d = findDoor(cx, cy);
+                // Se a porta estiver pelo menos 70% aberta, o jogador consegue passar
+                if (d && d->openProgress > 0.70f) {
+                    continue;
+                }
                 return false;
             }
+
+            return false;
         }
     }
     return true;
@@ -297,20 +372,44 @@ bool CityMap::isMuro(int x, int y) const {
     return isMuroType(getCell(x, y));
 }
 
-void CityMap::openDoor(int x, int y) {
-    if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
-        int cell = m_grid[y * MAP_WIDTH + x];
-        if (isDoorType(cell)) {
-            m_grid[y * MAP_WIDTH + x] = TYPE_EMPTY;
-            // Se for portão duplo ou porta dupla, abre a célula adjacente também
-            if (x + 1 < MAP_WIDTH && isDoorType(m_grid[y * MAP_WIDTH + (x + 1)])) {
-                m_grid[y * MAP_WIDTH + (x + 1)] = TYPE_EMPTY;
-            }
-            if (x - 1 >= 0 && isDoorType(m_grid[y * MAP_WIDTH + (x - 1)])) {
-                m_grid[y * MAP_WIDTH + (x - 1)] = TYPE_EMPTY;
-            }
-        }
-    }
+bool CityMap::isDoorOpen(int x, int y) const {
+    const Door* d = findDoor(x, y);
+    return d ? (d->openProgress > 0.5f) : false;
+}
+
+float CityMap::getDoorProgress(int x, int y) const {
+    const Door* d = findDoor(x, y);
+    return d ? d->openProgress : 0.0f;
+}
+
+bool CityMap::isDoorVertical(int x, int y) const {
+    const Door* d = findDoor(x, y);
+    return d ? d->isVertical : false;
+}
+
+int CityMap::getDoorType(int x, int y) const {
+    const Door* d = findDoor(x, y);
+    return d ? d->type : getCell(x, y);
+}
+
+void CityMap::toggleDoor(int x, int y) {
+    Door* d = findDoor(x, y);
+    if (!d) return;
+
+    DoorState targetState = (d->state == DoorState::CLOSED || d->state == DoorState::CLOSING) 
+                            ? DoorState::OPENING 
+                            : DoorState::CLOSING;
+    d->state = targetState;
+
+    // Sincroniza portas duplas adjacentes
+    Door* adjX1 = findDoor(x + 1, y);
+    if (adjX1) adjX1->state = targetState;
+    Door* adjX2 = findDoor(x - 1, y);
+    if (adjX2) adjX2->state = targetState;
+    Door* adjY1 = findDoor(x, y + 1);
+    if (adjY1) adjY1->state = targetState;
+    Door* adjY2 = findDoor(x, y - 1);
+    if (adjY2) adjY2->state = targetState;
 }
 
 int CityMap::getSectorID(float x, float y) const {

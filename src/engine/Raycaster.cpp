@@ -79,7 +79,7 @@ void Raycaster::renderFloorAndCeiling(
             }
 
             uint32_t color = textures.getPixel(texID, tx, ty);
-            color = applyFog(color, rowDistance, 22.0f);
+            color = applyFog(color, rowDistance, 38.0f);
 
             screenBuffer[y * m_screenWidth + x] = color;
         }
@@ -112,6 +112,9 @@ void Raycaster::renderWalls(
 
         int hit = 0;
         int side = 0;
+        float perpWallDist = 0.0f;
+        float wallX = 0.0f;
+        int hitTexID = TextureManager::BRICK_DARK;
 
         if (rayDirX < 0.0f) {
             stepX = -1;
@@ -129,7 +132,7 @@ void Raycaster::renderWalls(
             sideDistY = (static_cast<float>(mapY) + 1.0f - camera.pos.y) * deltaDistY;
         }
 
-        // Executa o algoritmo DDA (Digital Differential Analysis)
+        // Executa o algoritmo DDA com suporte a portas finas centralizadas e batentes
         while (hit == 0) {
             if (sideDistX < sideDistY) {
                 sideDistX += deltaDistX;
@@ -142,12 +145,79 @@ void Raycaster::renderWalls(
             }
 
             int cell = map.getCell(mapX, mapY);
-            if (cell > 0) {
+            if (cell == 0) continue;
+
+            if (Game::isDoorType(cell)) {
+                bool isVert = map.isDoorVertical(mapX, mapY);
+                float openProg = map.getDoorProgress(mapX, mapY);
+
+                if (!isVert) {
+                    // Porta horizontal: a folha fina está no centro do bloco (plano Y = mapY + 0.5)
+                    float halfDistY = (static_cast<float>(mapY) + 0.5f - camera.pos.y) / rayDirY;
+                    float hitCoordX = camera.pos.x + halfDistY * rayDirX;
+                    float offset = hitCoordX - static_cast<float>(mapX);
+
+                    if (halfDistY > 0.0f && offset >= 0.0f && offset <= 1.0f) {
+                        // Se o raio atingir a parte aberta que já deslizou, passa direto pelo vão!
+                        if (offset < openProg) {
+                            continue;
+                        }
+                        // Colidiu com a folha fina da porta
+                        hit = cell;
+                        perpWallDist = halfDistY;
+                        wallX = offset - openProg;
+                        side = 1;
+                        hitTexID = map.getDoorType(mapX, mapY);
+                        break;
+                    } else if (side == 0) {
+                        // Raio colidiu com o batente lateral (marco da porta)
+                        hit = cell;
+                        perpWallDist = sideDistX - deltaDistX;
+                        wallX = camera.pos.y + perpWallDist * rayDirY;
+                        wallX -= std::floor(wallX);
+                        hitTexID = TextureManager::DOOR_FRAME;
+                        break;
+                    }
+                } else {
+                    // Porta vertical: a folha fina está no centro do bloco (plano X = mapX + 0.5)
+                    float halfDistX = (static_cast<float>(mapX) + 0.5f - camera.pos.x) / rayDirX;
+                    float hitCoordY = camera.pos.y + halfDistX * rayDirY;
+                    float offset = hitCoordY - static_cast<float>(mapY);
+
+                    if (halfDistX > 0.0f && offset >= 0.0f && offset <= 1.0f) {
+                        if (offset < openProg) {
+                            continue;
+                        }
+                        hit = cell;
+                        perpWallDist = halfDistX;
+                        wallX = offset - openProg;
+                        side = 0;
+                        hitTexID = map.getDoorType(mapX, mapY);
+                        break;
+                    } else if (side == 1) {
+                        hit = cell;
+                        perpWallDist = sideDistY - deltaDistY;
+                        wallX = camera.pos.x + perpWallDist * rayDirX;
+                        wallX -= std::floor(wallX);
+                        hitTexID = TextureManager::DOOR_FRAME;
+                        break;
+                    }
+                }
+            } else {
+                // Parede sólida normal
                 hit = cell;
+                perpWallDist = (side == 0) ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
+                if (side == 0) {
+                    wallX = camera.pos.y + perpWallDist * rayDirY;
+                } else {
+                    wallX = camera.pos.x + perpWallDist * rayDirX;
+                }
+                wallX -= std::floor(wallX);
+                hitTexID = hit;
+                break;
             }
         }
 
-        float perpWallDist = (side == 0) ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
         if (perpWallDist < 0.01f) perpWallDist = 0.01f;
 
         m_zBuffer[x] = perpWallDist;
@@ -160,39 +230,39 @@ void Raycaster::renderWalls(
         int drawEnd = lineHeight / 2 + m_screenHeight / 2;
         if (drawEnd >= m_screenHeight) drawEnd = m_screenHeight - 1;
 
-        float wallX = 0.0f;
-        if (side == 0) {
-            wallX = camera.pos.y + perpWallDist * rayDirY;
-        } else {
-            wallX = camera.pos.x + perpWallDist * rayDirX;
-        }
         wallX -= std::floor(wallX);
+        if (wallX < 0.0f) wallX += 1.0f;
 
         int texX = static_cast<int>(wallX * static_cast<float>(TextureManager::TEX_SIZE));
         if (side == 0 && rayDirX > 0.0f) texX = TextureManager::TEX_SIZE - texX - 1;
         if (side == 1 && rayDirY < 0.0f) texX = TextureManager::TEX_SIZE - texX - 1;
+        texX = std::clamp(texX, 0, TextureManager::TEX_SIZE - 1);
 
         // Mapeia o elemento urbano de Chernogorsk para a textura correspondente
         int texID = TextureManager::BRICK_DARK;
-        switch (hit) {
-            case Game::TYPE_WALL_BRICK:     texID = TextureManager::BRICK_DARK; break;
-            case Game::TYPE_WALL_CONCRETE:  texID = TextureManager::CONCRETE; break;
-            case Game::TYPE_WALL_METAL:     texID = TextureManager::RUSTY_FENCE; break;
-            case Game::TYPE_CONTAINER_RED:  texID = TextureManager::CONTAINER_RED; break;
-            case Game::TYPE_CONTAINER_BLU:  texID = TextureManager::CONTAINER_BLUE; break;
-            case Game::TYPE_DOOR_WOOD:      texID = TextureManager::WOOD_DOOR; break;
-            case Game::TYPE_DOOR_SLIDING:   texID = TextureManager::DOOR_SLIDING; break;
-            case Game::TYPE_DOOR_HOSPITAL:  texID = TextureManager::DOOR_HOSPITAL; break;
-            case Game::TYPE_GATE_LARGE:     texID = TextureManager::GATE_IRON; break;
-            case Game::TYPE_FENCE_WIRE:     texID = TextureManager::FENCE_WIRE; break;
-            case Game::TYPE_MURO_SOVIET:    texID = TextureManager::MURO_SOVIET; break;
-            case Game::TYPE_MURO_STONE:     texID = TextureManager::MURO_STONE; break;
-            case Game::TYPE_WINDOW_GLASS:   texID = TextureManager::STORE_FRONT; break;
-            case Game::TYPE_WALL_HOSPITAL:  texID = TextureManager::HOSPITAL_WALL; break;
-            case Game::TYPE_HANGAR_BLUE:    texID = TextureManager::HANGAR_BLUE; break;
-            case Game::TYPE_POLICE_EMBLEM:  texID = TextureManager::POLICE_EMBLEM; break;
-            case Game::TYPE_WATER_BARRIER:  texID = TextureManager::WATER; break;
-            default:                        texID = TextureManager::BRICK_DARK; break;
+        if (hitTexID == TextureManager::DOOR_FRAME) {
+            texID = TextureManager::DOOR_FRAME;
+        } else {
+            switch (hit) {
+                case Game::TYPE_WALL_BRICK:     texID = TextureManager::BRICK_DARK; break;
+                case Game::TYPE_WALL_CONCRETE:  texID = TextureManager::CONCRETE; break;
+                case Game::TYPE_WALL_METAL:     texID = TextureManager::RUSTY_FENCE; break;
+                case Game::TYPE_CONTAINER_RED:  texID = TextureManager::CONTAINER_RED; break;
+                case Game::TYPE_CONTAINER_BLU:  texID = TextureManager::CONTAINER_BLUE; break;
+                case Game::TYPE_DOOR_WOOD:      texID = TextureManager::WOOD_DOOR; break;
+                case Game::TYPE_DOOR_SLIDING:   texID = TextureManager::DOOR_SLIDING; break;
+                case Game::TYPE_DOOR_HOSPITAL:  texID = TextureManager::DOOR_HOSPITAL; break;
+                case Game::TYPE_GATE_LARGE:     texID = TextureManager::GATE_IRON; break;
+                case Game::TYPE_FENCE_WIRE:     texID = TextureManager::FENCE_WIRE; break;
+                case Game::TYPE_MURO_SOVIET:    texID = TextureManager::MURO_SOVIET; break;
+                case Game::TYPE_MURO_STONE:     texID = TextureManager::MURO_STONE; break;
+                case Game::TYPE_WINDOW_GLASS:   texID = TextureManager::STORE_FRONT; break;
+                case Game::TYPE_WALL_HOSPITAL:  texID = TextureManager::HOSPITAL_WALL; break;
+                case Game::TYPE_HANGAR_BLUE:    texID = TextureManager::HANGAR_BLUE; break;
+                case Game::TYPE_POLICE_EMBLEM:  texID = TextureManager::POLICE_EMBLEM; break;
+                case Game::TYPE_WATER_BARRIER:  texID = TextureManager::WATER; break;
+                default:                        texID = TextureManager::BRICK_DARK; break;
+            }
         }
 
         float step = 1.0f * static_cast<float>(TextureManager::TEX_SIZE) / static_cast<float>(lineHeight);
@@ -204,7 +274,7 @@ void Raycaster::renderWalls(
 
             uint32_t color = textures.getPixel(texID, texX, texY);
             color = applySideShade(color, side);
-            color = applyFog(color, perpWallDist, 22.0f);
+            color = applyFog(color, perpWallDist, 38.0f);
 
             screenBuffer[y * m_screenWidth + x] = color;
         }

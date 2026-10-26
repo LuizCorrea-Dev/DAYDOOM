@@ -9,7 +9,7 @@ namespace DayDoom::Engine {
 class TextureManager {
 public:
     static constexpr int TEX_SIZE = 64;
-    static constexpr int NUM_TEXTURES = 24;
+    static constexpr int NUM_TEXTURES = 32;
 
     enum TextureID {
         BRICK_DARK = 0,       // BRICK01 - Prédios residenciais e tijolo antigo
@@ -34,7 +34,8 @@ public:
         POLICE_EMBLEM = 19,   // POLICESH - Fachada com o brasão do escudo da Polícia
         MURO_SOVIET = 20,     // MUROPO2 - Muro de placas de concreto pré-moldado soviético PO-2
         MURO_STONE = 21,      // MUROSTN - Muro de pedra e alvenaria de quintais residenciais
-        DOOR_HOSPITAL = 22    // DOORHOSP - Porta dupla branca com cruz vermelha do hospital
+        DOOR_HOSPITAL = 22,   // DOORHOSP - Porta dupla branca com cruz vermelha do hospital
+        DOOR_FRAME = 23       // DOORFRM - Batente e marco lateral da porta em metal e madeira escura
     };
 
     TextureManager();

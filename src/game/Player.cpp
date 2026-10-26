@@ -80,15 +80,17 @@ void Player::update(float deltaTime, const HAL::Input& input, CityMap& map) {
         m_camera.pos.y = newPosY;
     }
 
-    // 5. Interação com o Mundo: Abrir Portas de Casas com 'F' / 'Space'
+    // 5. Interação com o Mundo: Abrir e Fechar Portas com 'F' / 'Space'
     if (input.isActionJustPressed(HAL::Action::INTERACT_LOOT)) {
-        // Célula diretamente na frente do jogador (1.2 unidades à frente)
-        int targetCellX = static_cast<int>(m_camera.pos.x + m_camera.dir.x * 1.2f);
-        int targetCellY = static_cast<int>(m_camera.pos.y + m_camera.dir.y * 1.2f);
+        // Célula diretamente na frente do jogador (até 1.4 unidades à frente)
+        int targetCellX = static_cast<int>(m_camera.pos.x + m_camera.dir.x * 1.4f);
+        int targetCellY = static_cast<int>(m_camera.pos.y + m_camera.dir.y * 1.4f);
 
         if (map.isDoor(targetCellX, targetCellY)) {
-            std::cout << "[GAME] Porta de casa aberta em: (" << targetCellX << ", " << targetCellY << ")" << std::endl;
-            map.openDoor(targetCellX, targetCellY);
+            bool wasOpen = map.isDoorOpen(targetCellX, targetCellY);
+            map.toggleDoor(targetCellX, targetCellY);
+            std::cout << "[GAME] Porta " << (wasOpen ? "fechando..." : "abrindo...") 
+                      << " em: (" << targetCellX << ", " << targetCellY << ")" << std::endl;
         }
     }
 

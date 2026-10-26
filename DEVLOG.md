@@ -251,4 +251,46 @@
 - [x] Ponto de localização pulsante e bússola militar com orientação norte no Automap.
 - [x] Compilação MSBuild Release x64 concluída com 0 Warnings e 0 Errors.
 
+---
+
+## [2026-10-26 17:00] - Entrada #05: Portas Finas com Deslizamento e Batentes (Wolf3D/Doom Style) e Texturas Reais em Alto Contraste
+
+### 1. O que foi Implementado
+- **Arquitetura de Portas Finas e Centradas (Substituição de Blocos Maciços):**
+  - Eliminação da lógica antiga de apagar o bloco inteiro (`m_grid[x, y] = 0`).
+  - Criação da estrutura de dados `Door` com máquina de estados (`CLOSED`, `OPENING`, `OPEN`, `CLOSING`) e porcentagem contínua de abertura `openProgress` (0.0f a 1.0f).
+  - Portas são agora **lâminas finas posicionadas exatamente no centro do bloco** ($X + 0.5$ para portas verticais ou $Y + 0.5$ para horizontais), embutidas entre as paredes.
+- **Novo Algoritmo DDA para Portas e Batentes no Raycaster (`Raycaster.cpp`):**
+  - O raio DDA testa a interseção com o plano central da folha da porta.
+  - Se a porta estiver aberta ou em movimento, a abertura desliza suavemente: o raio que passar pela folga não colide e **continua atravessando para o interior do edifício**!
+  - Se atingir a folha da porta, a textura correta desliza horizontalmente acompanhando o movimento.
+  - Se o raio entrar lateralmente pelo vão da parede, atinge o **novo marco/batente lateral de aço e madeira** (`DOOR_FRAME`), dando profundidade e espessura real à passagem.
+- **Abertura e Fechamento Bidirecional com a Tecla `[F]` ou `[Espaço]`:**
+  - O jogador agora pode **abrir E fechar** qualquer porta quando quiser.
+  - O HUD detecta dinamicamente o estado da porta:
+    - Porta fechada ou fechando: prompt dourado `"[F]: ABRIR PORTA"`.
+    - Porta aberta ou abrindo: prompt ciano `"[F]: FECHAR PORTA"`.
+  - Passagem física (`isWalkable`) liberada organicamente assim que a porta atinge mais de 70% de abertura.
+- **Reformulação Completa das 24 Texturas para Alto Contraste Retrô (Estilo Doom 1993):**
+  - **Tijolos (`BRICK_DARK`):** Padrão de 8 fileiras com juntas alternadas, bisel 3D com luzes claras na borda superior/esquerda e sombras profundas na borda inferior/direita, além de variações individuais de tom de terracota.
+  - **Concreto Soviético (`CONCRETE`):** Juntas de dilatação, 4 parafusos de ancoragem com arruelas de aço nas pontas e escorrimento vertical escuro.
+  - **Muro Soviético PO-2 (`MURO_SOVIET`):** Relevo piramidal em losango ("Забор ПО-2") com 4 facetas iluminadas direcionalmente em 3D.
+  - **Porta de Madeira (`WOOD_DOOR`):** 4 pranchas de carvalho com veios rústicos, dobradiças de ferro forjado e maçaneta dourada de bronze com espelho.
+  - **Porta Blindada (`DOOR_SLIDING`):** Faixas zebradas de perigo (amarelo e preto), visor blindado aramado e teclado com LED verde.
+  - **Porta Hospitalar (`DOOR_HOSPITAL`):** Portas duplas brancas com chapas de aço inox na base e barras antipânico com reflexo metálico.
+  - **Galpão Azul (`HANGAR_BLUE`):** Chapas frisadas com cristas reflexivas, vigas I de aço e rebites industriais.
+- **Iluminação Atmosférica com Preservação de Texturas (`MathDef.hpp`):**
+  - A névoa por distância agora garante uma **iluminação ambiente mínima de 32%** e raio estendido até 38 metros, impedindo que prédios do outro lado da rua se tornem blocos pretos planos.
+
+### 2. Checklist de Validação e Testes
+- [x] Portas finas centralizadas no bloco com vão e batente (`DOOR_FRAME`).
+- [x] Deslizamento suave de abertura e fechamento a 60 FPS.
+- [x] Raio do Raycaster atravessa a abertura de portas abertas permitindo ver o interior.
+- [x] Suporte a abrir e fechar a porta pressionando `[F]` ou `[Espaço]`.
+- [x] Prompt visual no HUD alternando dinamicamente entre `[F]: ABRIR PORTA` e `[F]: FECHAR PORTA`.
+- [x] Colisão física do jogador liberada suavemente quando a porta abre.
+- [x] 24 texturas com alto contraste, relevo 3D, bisel e estilo autêntico do Doom 1993.
+- [x] Compilado com MSBuild Release x64: 0 Warnings, 0 Errors.
+
+
 

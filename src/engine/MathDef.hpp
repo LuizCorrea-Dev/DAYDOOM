@@ -34,10 +34,14 @@ inline uint32_t makeColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
            (static_cast<uint32_t>(b));
 }
 
-// Aplica névoa e sombra por distância (Distance Fog / Shading estilo Doom)
-inline uint32_t applyFog(uint32_t color, float distance, float maxDist = 16.0f) {
-    float factor = 1.0f - std::min(distance / maxDist, 1.0f);
-    factor = factor * factor; // Curva quadrática para atmosfera pós-apocalíptica sombria
+// Aplica iluminação ambiente e névoa atmosférica de Chernogorsk (preserva texturas nítidas)
+inline uint32_t applyFog(uint32_t color, float distance, float maxDist = 38.0f) {
+    constexpr float MIN_LIGHT = 0.32f; // Mantém pelo menos 32% de iluminação para texturas nunca virarem blocos pretos
+    float t = distance / maxDist;
+    if (t > 1.0f) t = 1.0f;
+
+    // Curva de atenuação suave estilo Doom clássico
+    float factor = (1.0f - t) * (1.0f - MIN_LIGHT) + MIN_LIGHT;
 
     uint8_t a = (color >> 24) & 0xFF;
     uint8_t r = static_cast<uint8_t>(((color >> 16) & 0xFF) * factor);
@@ -50,15 +54,15 @@ inline uint32_t applyFog(uint32_t color, float distance, float maxDist = 16.0f) 
            (static_cast<uint32_t>(b));
 }
 
-// Escurece levemente paredes viradas para o eixo horizontal (sombra de face)
+// Escurece levemente paredes viradas para o eixo horizontal (sombra de face 3D)
 inline uint32_t applySideShade(uint32_t color, int side) {
     if (side == 0) return color; // Face vertical
 
-    // Diminui o brilho em 25% para a face horizontal
+    // Face horizontal com 82% de luminosidade (dá relevo volumétrico sem perder detalhes)
     uint8_t a = (color >> 24) & 0xFF;
-    uint8_t r = ((color >> 16) & 0xFF) * 3 / 4;
-    uint8_t g = ((color >> 8)  & 0xFF) * 3 / 4;
-    uint8_t b = (color & 0xFF)         * 3 / 4;
+    uint8_t r = ((color >> 16) & 0xFF) * 82 / 100;
+    uint8_t g = ((color >> 8)  & 0xFF) * 82 / 100;
+    uint8_t b = (color & 0xFF)         * 82 / 100;
 
     return (static_cast<uint32_t>(a) << 24) |
            (static_cast<uint32_t>(r) << 16) |
