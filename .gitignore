@@ -1,0 +1,31 @@
+# Build output & binaries
+build/
+bin/
+out/
+*.exe
+*.dll
+*.obj
+*.o
+*.pdb
+*.ilk
+*.lib
+*.exp
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+_deps/
+
+# IDE & Editor files
+.vs/
+*.sln
+*.vcxproj*
+.vscode/
+.idea/
+
+# OS specific
+Thumbs.db
+Desktop.ini
+.DS_Store
