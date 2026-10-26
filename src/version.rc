@@ -1,0 +1,30 @@
+#include <windows.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     0,0,1,0
+PRODUCTVERSION  0,0,1,0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041604B0"
+        BEGIN
+            VALUE "CompanyName",      "LuizCorrea-Dev\0"
+            VALUE "FileDescription",  "DayDoom 2.5D - DayZ Retro Demake\0"
+            VALUE "FileVersion",      "v001 (0.0.1.0)\0"
+            VALUE "InternalName",     "DayDoom_v001\0"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 LuizCorrea-Dev\0"
+            VALUE "OriginalFilename", "DayDoom_v001.exe\0"
+            VALUE "ProductName",      "DayDoom 2.5D\0"
+            VALUE "ProductVersion",   "v001\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0416, 1200
+    END
+END

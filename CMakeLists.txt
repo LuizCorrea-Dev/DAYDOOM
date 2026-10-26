@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(DayDoom VERSION 1.0.0 LANGUAGES CXX C)
+project(DayDoom VERSION 0.0.1 LANGUAGES CXX C RC)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,7 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_compile_definitions(
     SCREEN_WIDTH=480
     SCREEN_HEIGHT=270
-    WINDOW_TITLE="DayDoom 2.5D - DayZ Retro Demake"
+    WINDOW_TITLE="DayDoom 2.5D [v001] - DayZ Retro Demake"
+    DAYDOOM_VERSION="v001"
 )
 
 # Inclusão de diretórios de código
@@ -53,12 +54,24 @@ file(GLOB_RECURSE SOURCES
     "src/*.h"
 )
 
+if(WIN32)
+    list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/version.rc")
+endif()
+
 add_executable(DayDoom ${SOURCES})
 
 if(TARGET SDL2::SDL2main)
     target_link_libraries(DayDoom PRIVATE SDL2::SDL2main)
 endif()
 target_link_libraries(DayDoom PRIVATE ${SDL2_LIBRARIES})
+
+# Geração automática do executável versionado com tag da release
+add_custom_command(TARGET DayDoom POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "$<TARGET_FILE:DayDoom>"
+    "$<TARGET_FILE_DIR:DayDoom>/DayDoom_v001.exe"
+    COMMENT "Gerando executavel versionado DayDoom_v001.exe"
+)
 
 # Copiar assets para a pasta de saída do executável
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")

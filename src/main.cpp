@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     SDL_SetMainReady();
 
     std::cout << "========================================" << std::endl;
-    std::cout << "  DAYDOOM 2.5D - DayZ Retro Demake      " << std::endl;
+    std::cout << "  DAYDOOM 2.5D [v001] - DayZ Demake     " << std::endl;
     std::cout << "  C++17 + SDL2 Multiplataforma          " << std::endl;
     std::cout << "========================================" << std::endl;
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     int initialWinW = (profile == DayDoom::HAL::DisplayProfile::RETRO_4_3) ? 640 : 960;
     int initialWinH = (profile == DayDoom::HAL::DisplayProfile::RETRO_4_3) ? 480 : 540;
 
-    if (!platform.init("DayDoom 2.5D - DayZ Retro Demake", profile, initialWinW, initialWinH, false)) {
+    if (!platform.init("DayDoom 2.5D [v001] - DayZ Retro Demake", profile, initialWinW, initialWinH, false)) {
         std::cerr << "[MAIN] Falha crítica ao inicializar a plataforma." << std::endl;
         return 1;
     }
